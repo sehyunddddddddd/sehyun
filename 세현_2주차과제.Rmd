@@ -1,0 +1,116 @@
+---
+title: "sehyun_2주차"
+output: html_document
+date: "2024-03-14"
+---
+### 예제 1번
+
+```{r}
+sqrt(2)
+exp(5)
+log10(20)
+log(20)
+gamma(5)
+abs(-4.5)
+round(pi,2)
+```
+
+##  예제 2번
+
+```{r cars}
+dnorm(x = 5, mean = 5, sd = 1, log = FALSE)
+curve(dnorm(x, mean = 5, sd = 1), from =0, to = 10, xlab = 'x', ylab = 'Density', main = 'Normal Distribution')
+points(5, dnorm(x = 5, mean = 5, sd = 1, log = FALSE), col = 'blue',pch = 19)
+
+dexp(x = 1, rate = 5, log=FALSE)
+curve(dexp(x , rate = 5, log = FALSE), xlab = 'x', ylab = 'Density', main = 'Exponential Distribution')
+points(1, dexp(x = 1, rate = 5, log=FALSE), col = 'blue',pch = 19)
+
+dweibull(50, shape = 80, scale = 1.5)
+curve(dweibull(x, shape = 80, scale = 1.5), xlab = 'x', ylab = 'y', main = 'Weibull Distribution')
+points(50, dweibull(50, shape = 80, scale = 1.5), col = 'blue',pch = 19)
+```
+
+### 예제 3번
+
+```{r}
+A <- 5 ; b <- 6
+A ; b
+ls()
+2*A + b^2
+(A^5)*3^b
+rm(list=ls())
+ls()
+```
+
+### 예제 4번
+```{r}
+norm_d <- function(x,mean, sd){
+  f <- 1/(sd*sqrt(2*pi))*exp(-(x-mean)^2/(2*sd^2))
+  return(f)
+}
+
+norm_d(5,5,1)
+
+dnorm(x = 5, mean = 5, sd = 1, log = FALSE)
+```
+### 예제 5번
+```{r}
+ex5_1 <- sum(c(1:100)^2)
+ex5_1
+
+ex5_2 <- prod(c(1:10))
+ex5_2
+
+ex5_3 <- sum(cos((c(1:20)/20)*pi))
+ex5_3
+```
+
+### 예제 6번
+```{r}
+x <- c(1:9) *2
+mat1 <- matrix(x , 3, byrow = TRUE)
+mat1
+
+dimnames(mat1)[[1]] <- c("a","b","c")
+dimnames(mat1)[[2]] <- c("가","나","다")
+mat1
+
+mat1[2,3]
+```
+### 예제 7번
+```{r}
+data(iris)
+vir <- iris[iris$Species == 'virginica',]
+vir
+```
+
+### 예제 8번
+
+```{r}
+iris_3 <- iris[,3]
+iris_s <- c(iris$Species)
+list1 <- list(iris_3, iris_s)
+```
+
+### 예제 9번
+```{r}
+
+f <- function(iris_data){
+  n <- nrow(iris_data)
+  for(i in 1:n){
+    if (iris$Species[i] == 'setosa'){
+      print(paste(iris$Species[i],1))
+    }
+    if(iris$Species[i] == 'versicolor'){
+      print(paste(iris$Species[i],2))
+    }
+    if(iris$Species[i] == 'virginica'){
+      print(paste(iris$Species[i],3))
+    }
+  }
+}
+
+f(iris)
+```
+
