@@ -97,21 +97,8 @@ dat$Target <- as.factor(dat$Target) #타겟을 변수형으로 변환해 #서머
 dat$Type <- as.factor(dat$Type)
 dat$Failure.Type <- as.factor(dat$Failure.Type)
 
-#데이터 시각화 수행
 
-'''visualize <- function(x){
-  if (is.factor(x)){
-    barpot(table(x), col = 'grey')
-  } else{
-    hist(x, col='grey')
-  }
-}
 
-par(mfrow=c(4,2))
-for (i in 1:ncol(dat)){
-  visualize(x = dat[,i])
-}
-'''
 
 ```
 
