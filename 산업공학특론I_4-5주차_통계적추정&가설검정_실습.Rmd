@@ -16,27 +16,47 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 #### 1-1. MLE
 ```{r simul_mle}
 # 지수분포 난수 생성
+#난수 생성은 r함수 사용
+x<-rexp(10000, rate = 0.1)
+
 
 # 로그우도함수 정의
+mle <- function(param){
+  -sum(dexp(x,rate = param, log = T)) #rate가 파라미터인 density function
+  
+}
 
 # 최적화 수행하여 모수 추정
 
+mle_opt <- optimize(mle, c(0,10)) #구간 설정 c(0,10)
+mle_opt #minimum이 최우추정량임 그래서 lambda와 비슷하게 나옴 . objective는 likelihood
+#optim() 
 ```
 
 
 #### 1-2. LSE
 ```{r simul_lse}
 # 예측값 기반 최소제곱함수 정의
-
+lse <- function(param){ #lse는 분포가 아니라서 예측값이 들어감 ?
+  pred <- param*exp(-param*x) #예측값
+  sum((x-pred)^2)
+}
 # 최적화 수행하여 모수 추정
-
+lse_opt <- optimize(lse, c(0,10))
+lse_opt
 ```
 
 #### 1-3. 적합 결과 비교
 ```{r simul_compare}
 # MLE, LSE 결과를 비교하여 시각화
-
+hist(x, col ='grey', breaks=50, prob=1,main = 'Density of Simulated Data' ) #50가지로 구간을 쪼개겠다. main을 이용해서 제목 성정  
+curve(dexp(x, rate = mle_opt$minimum), col = 'red', add=1 )
+curve(dexp(x, rate = lse_opt$minimum), col = 'blue', add=1 )
+#exponential distribution 분포와 비슷 한 히스토그램이 나옴
+legend('topright', legend = c('MLE', 'LSE'), col = c('red','blue'), lty=1)
 ```
+
+
 
 
 ### 2. 구간추정
@@ -46,14 +66,29 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 
 ```{r simul_ci}
 # 정규분포 난수 생성
+x <- rnorm(10000, mean = 50, sd = 10)
 
 # 로그우도함수 정의
+mle <- function(param){
+  -sum(dnorm(x,mean = param[1], sd = param[2], log = T))
+}
 
 # 최적화 수행하여 모수 추정 (2차원 이상은 optim 함수 사용)
-
+opt <- optim(c(mean(x), sd(x)), mle, hessian = T)
+opt
 # 산출된 분산값을 기반으로 표준오차 추정
+varcov <- solve(opt$hessian)
+diag(varcov) #뮤와 시그마의 분산이 나옴 ? 
+se <- sqrt(diag(varcov))
 
 # 95% 신뢰구간 계산
+param <- opt$par
+z <- qnorm(0.05/2, lower.tail = F)
+
+param - z*se
+param + z*se
+
+rbind(param,param - z*se, param + z*se)
 ```
 
 #### 2-2. CP
@@ -61,6 +96,29 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 # 10000번의 시뮬레이션을 수행하고, 시뮬레이션 1세트 당 100개의 난수 생성
 # 이론적인 신뢰수준 하에서 정의된 신뢰구간 산출
 # 총 10000번 중 실제 참값이 포함된 비율을 평가하여 신뢰수준의 정합성을 검토
+nx <- 100
+nsim <- 10000
+cp <- 0
+alpha <- 0.05 # 신뢰수준 95% 설정
+mu = 0
+
+for (i in 1:nsim){
+  x <- rnorm(nx)
+  m <- mean(x); se <- sd(x)/sqrt(nx)
+  
+  #신뢰구간 계산
+  z <- qnorm(alpha/2, lower.tail =F)
+  lower <- m - z * se
+  upper <- m + z * se
+  
+  #커버리지 평가
+  if (mu >= lower & mu <= upper){
+    cp <- cp+1
+  }
+}
+
+cp
+cp/nsim
 
 # 표준정규분포로부터 샘플 생성하여 평균, 표준오차 계산
 
@@ -96,8 +154,20 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 ```{r data_eda}
 
 # 데이터 로드 및 조회
+#setwd('F:/')
+dat <- read.csv('산업공학특론I_4-5주차_실습 데이터.csv')
+head(dat)
 
-# 나이와 BMI의 경우 보험료를 결정하는 인자가 되어야 하므로, 범주화 수행
+#나이와 BMI의 경우 보험료를 결정하는 인자가 되어야 하므로, 범주화 수행
+group <- function(x){
+  bp <- (min(x) %/% 10):(max(x) %/% 10+1)*10
+  cut(x, breaks = bp, include.lower = T)
+
+}
+
+#연속형 의 이산화
+dat$bmi <- group(dat$bmi)
+dat$age <- group(dat$age)
 
 # 데이터 탐색을 위한 시각화 수행
 # 이 때, 범주형은 막대그래프, 연속형은 히스토그램으로 분포 시각화하도록 함수 작성
@@ -110,6 +180,18 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 ### 2. 데이터 그룹화 및 기술통계량 검토
 ```{r data_group}
 # 타입에 따라 그룹화된 데이터 리스트 생성 및 구분된 그룹별 기술통계량 검토
+grp_summary <- function(grp){
+  dat_spl <- split(dat$charges, grp)
+  print(lapply(dat_spl, summary))
+  
+}
+
+colnames(dat)
+for (i in 1:(ncol(dat)-1)){
+  print('#############################')
+  print(colnames(dat)[i])
+  grp_summary(dat[,1])
+}
 # lapply 함수를 사용하면 리스트 단위의 개별 summary를 진행할 수 있음
 
 # 유효한 차이를 보이는 변수를 기반으로 유형별 경험적 밀도/누적분포 시각화 함수 정의
@@ -126,10 +208,18 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 
 ```{r data_meantest}
 # 단일 표본에 대한 검정
+?t.test
+t.test(dat$charges, mu = 15000, alternative = 'less', conf.level = 0.95 )
 ### H0: 평균 보험료가 15,000원을 넘는다.
 ### H1: 평균 보험료가 15,000원을 넘지 않는다.
 
 # 독립적인 두 표본에 대한 검정
+dat_smoke <- split(dat$charges, dat$smoker)
+names(dat_smoke)
+no <- dat_smoke$no ; yes <- dat_smoke$yes
+
+t.test(no, yes, var.equal = T) #등분산 가정
+t.test(no, yes, var.equal = F) #불등분산 가정
 ### H0: 흡연자/비흡연자 간 평균 보험료에는 차이가 없다.
 ### H1: 흡연자/비흡연자 간 평균 보험료에는 차이가 존재한다.
 
@@ -140,6 +230,8 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 현실세계에서 대부분의 모분산은 모평균만큼 중요하지 않은 관계로, 두 표본에 대한 비교 검정만 일반적으로 수행
 
 ```{r data_vartest}
+var.test(no, yes, conf.level = 0.99)
+
 # 독립적인 두 표본에 대한 검정
 ### H0: 흡연자/비흡연자 간 보험료의 편차는 동일하다.
 ### H1: 흡연자/비흡연자 간 보험료의 편차는 동일하지 않다.
@@ -149,6 +241,12 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 
 #### 3-3. 모비율 검정
 ```{r data_proptest}
+ndat <- length(dat$charges)
+ndat <- nrow(dat)
+np_ <- dat$charges > 15000
+np <- sum(dat$charges > 15000)
+
+prop.test(np, ndat, p = 0.5, alternative = "less")
 # 보험료가 15,000원을 초과하는 비율을 설정
 # 단일 표본에 대한 검정
 ### H0: 가입자중 절반 이상이 15,000원이 넘는 보험료를 낸다.
@@ -167,9 +265,35 @@ knitr::opts_chunk$set(fig.width=12, fig.height=12)
 # 일차분할표 검정
 ### H0: 범주형 변수와 관계없이 보험을 가입한다.
 ### H1: 범주형 변수별로 보험 가입률이 다르다.
+x <- dat$age
+test_one <- function(x){
+  ob <- table(x)
+  ex <- rep(mean(ob), length(ob))
+  chisq.test(rbind(ob, ex))
 
+}  
+for (i in 1:(ncol(dat)-1)){
+  chi_test <- test_one(dat[,i])
+  if (chi_test$p.value < 0.05){
+    print(colnames(dat)[i])
+    print(chi_test)
+  }
+}
 # 이차분할표 검정
 ### H0: 조합된 범주형 변수는 서로 연관성이 없다.
 ### H1: 조합된 범주형 변수는 서로 연관성이 있다.
+#1~ncol(dat)-1 열까지의 2중 조합
+for (i in 1:(ncol(dat)-2)){
+  for (j in (i+1):(ncol(dat)-1)){
+    chi_test <- chisq.test(table(dat[,i], dat[,j]))
+    if (chi_test$p.value < 0.05){
+      print(colnames(dat)[i])
+      print(colnames(dat)[j])
+      print(chi_test)
+  }
+}
+}
+
+
 
 ```
